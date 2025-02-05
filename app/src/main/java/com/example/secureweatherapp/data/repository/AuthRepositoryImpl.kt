@@ -1,49 +1,42 @@
 package com.example.secureweatherapp.data.repository
 
-import android.util.Log
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.example.secureweatherapp.data.local.User
 import com.example.secureweatherapp.data.local.UserDao
 import com.example.secureweatherapp.domain.AuthRepository
 import com.example.secureweatherapp.domain.util.Resource
+import com.example.secureweatherapp.security.SecurityUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import java.security.MessageDigest
 import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
     private val userDao: UserDao
 ) : AuthRepository {
 
-    private fun hashPassword(password: String): String {
-        val bytes = password.toByteArray()
-        val md = MessageDigest.getInstance("SHA-256")
-        val digest = md.digest(bytes)
-        return digest.fold("") { str, it -> str + "%02x".format(it) }
-    }
-
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun login(email: String, password: String): Flow<Resource<User>> = flow {
         try {
             emit(Resource.Loading())
-            
+
             val user = userDao.getUserByEmail(email)
             if (user == null) {
-                emit(Resource.Error("Invalid email or password"))
+                emit(Resource.Error("Invalid credentials"))
                 return@flow
             }
 
-            val hashedPassword = hashPassword(password)
-            if (user.passwordHash != hashedPassword) {
-                emit(Resource.Error("Invalid email or password"))
-                return@flow
+            if (SecurityUtils.verifyPassword(password, user.passwordHash, user.passwordSalt)) {
+                emit(Resource.Success(user))
+            } else {
+                emit(Resource.Error("Invalid credentials"))
             }
-
-            emit(Resource.Success(user))
         } catch (e: Exception) {
-            Log.e("AuthRepository", "Error during login", e)
-            emit(Resource.Error("An error occurred during login"))
+            emit(Resource.Error(e.message ?: "Authentication failed"))
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun register(email: String, password: String): Flow<Resource<User>> = flow {
         try {
             emit(Resource.Loading())
@@ -53,21 +46,33 @@ class AuthRepositoryImpl @Inject constructor(
                 return@flow
             }
 
-            val hashedPassword = hashPassword(password)
+            if (!isPasswordStrong(password)) {
+                emit(Resource.Error("Password must be at least 12 characters long and contain numbers, symbols"))
+                return@flow
+            }
+
+            val (hash, salt) = SecurityUtils.hashPassword(password)
             val user = User(
                 email = email,
-                passwordHash = hashedPassword
+                passwordHash = hash,
+                passwordSalt = salt
             )
 
             userDao.insertUser(user)
             emit(Resource.Success(user))
         } catch (e: Exception) {
-            Log.e("AuthRepository", "Error during registration", e)
-            emit(Resource.Error("An error occurred during registration"))
+            emit(Resource.Error(e.message ?: "Registration failed"))
         }
     }
 
     override suspend fun isEmailTaken(email: String): Boolean {
         return userDao.isEmailTaken(email)
+    }
+
+    private fun isPasswordStrong(password: String): Boolean {
+        return password.length >= 12 &&
+                password.any { it.isDigit() } &&
+                password.any { it.isLetter() } &&
+                password.any { !it.isLetterOrDigit() }
     }
 }

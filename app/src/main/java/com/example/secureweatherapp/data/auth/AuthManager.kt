@@ -1,33 +1,47 @@
 package com.example.secureweatherapp.data.auth
 
+import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
 import androidx.activity.ComponentActivity
+import androidx.annotation.RequiresApi
 import androidx.credentials.CreatePasswordRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetPasswordOption
 import com.example.secureweatherapp.data.local.User
 import com.example.secureweatherapp.data.local.UserDao
+import com.example.secureweatherapp.security.DeviceSecurity
+import com.example.secureweatherapp.security.SecurityUtils
 import com.example.secureweatherapp.ui.util.DeviceUtils
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ActivityRetainedScoped
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.security.MessageDigest
 import javax.inject.Inject
 
 @ActivityRetainedScoped
 class AuthManager @Inject constructor(
     private val encryptedPrefs: SharedPreferences,
-    private val userDao: UserDao
+    private val userDao: UserDao,
+    @ApplicationContext private val context: Context
 ) {
-    private val TAG = "AuthManager"
+    companion object {
+        private const val TOKEN_VALIDITY_DURATION = 2 * 60 * 60 * 1000L // 2 hours
+        private const val MAX_LOGIN_ATTEMPTS = 5
+        private const val LOCKOUT_DURATION = 15 * 60 * 1000L // 15 minutes
+    }
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     init {
-        checkAuthState()
+        if (SecurityUtils.isDeviceRooted()) { //|| DeviceSecurity.isDeveloperOptionsEnabled(context)
+            _authState.value = AuthState.Error("Device security check failed")
+        } else {
+            checkAuthState()
+        }
     }
 
     private fun checkAuthState() {
@@ -44,29 +58,22 @@ class AuthManager @Inject constructor(
         }
     }
 
-    private fun hashPassword(password: String): String {
-        val bytes = password.toByteArray()
-        val md = MessageDigest.getInstance("SHA-256")
-        val digest = md.digest(bytes)
-        return digest.fold("") { str, it -> str + "%02x".format(it) }
-    }
-
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun register(activity: ComponentActivity, email: String, password: String): Result<Unit> {
         return try {
             if (DeviceUtils.isEmulator()) {
-                // Use Room database for emulator
                 if (userDao.isEmailTaken(email)) {
                     return Result.failure(Exception("Email is already registered"))
                 }
 
-                val hashedPassword = hashPassword(password)
+                val (hash, salt) = SecurityUtils.hashPassword(password)
                 val user = User(
                     email = email,
-                    passwordHash = hashedPassword
+                    passwordHash = hash,
+                    passwordSalt = salt
                 )
                 userDao.insertUser(user)
             } else {
-                // Use Credential Manager for real devices
                 val credentialManager = CredentialManager.create(activity)
                 val request = CreatePasswordRequest(
                     id = email,
@@ -78,8 +85,7 @@ class AuthManager @Inject constructor(
                 )
             }
 
-            // For both cases, create a token and save auth data
-            val token = "token_${System.currentTimeMillis()}"
+            val token = generateSecureToken()
             saveAuthData(token)
             _authState.value = AuthState.LoggedIn
             Result.success(Unit)
@@ -88,19 +94,24 @@ class AuthManager @Inject constructor(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun login(activity: ComponentActivity, email: String, password: String): Result<Unit> {
         return try {
             if (DeviceUtils.isEmulator()) {
-                // Use Room database for emulator
                 val user = userDao.getUserByEmail(email) ?:
-                return Result.failure(Exception("Invalid email or password"))
+                return Result.failure(Exception("Invalid credentials"))
 
-                val hashedPassword = hashPassword(password)
-                if (user.passwordHash != hashedPassword) {
-                    return Result.failure(Exception("Invalid email or password"))
+                if (isUserLockedOut(user.lastAttempt, user.failedAttempts)) {
+                    return Result.failure(Exception("Account is temporarily locked"))
                 }
+
+                if (!SecurityUtils.verifyPassword(password, user.passwordHash, user.passwordSalt)) {
+                    handleFailedLogin(email)
+                    return Result.failure(Exception("Invalid credentials"))
+                }
+
+                userDao.resetFailedAttempts(email)
             } else {
-                // Use Credential Manager for real devices
                 val credentialManager = CredentialManager.create(activity)
                 val getPasswordOption = GetPasswordOption()
                 val request = GetCredentialRequest(listOf(getPasswordOption))
@@ -110,8 +121,7 @@ class AuthManager @Inject constructor(
                 )
             }
 
-            // For both cases, create a token and save auth data
-            val token = "token_${System.currentTimeMillis()}"
+            val token = generateSecureToken()
             saveAuthData(token)
             _authState.value = AuthState.LoggedIn
             Result.success(Unit)
@@ -120,9 +130,16 @@ class AuthManager @Inject constructor(
         }
     }
 
-    fun logout() {
-        clearAuthData()
-        _authState.value = AuthState.LoggedOut
+    private fun isUserLockedOut(lastAttempt: Long, failedAttempts: Int): Boolean {
+        if (failedAttempts >= MAX_LOGIN_ATTEMPTS) {
+            val timeSinceLastAttempt = System.currentTimeMillis() - lastAttempt
+            return timeSinceLastAttempt < LOCKOUT_DURATION
+        }
+        return false
+    }
+
+    private suspend fun handleFailedLogin(email: String) {
+        userDao.incrementFailedAttempts(email)
     }
 
     private fun saveAuthData(token: String) {
@@ -132,15 +149,20 @@ class AuthManager @Inject constructor(
             .apply()
     }
 
+    private fun generateSecureToken(): String {
+        return java.util.UUID.randomUUID().toString()
+    }
+
+    fun logout() {
+        clearAuthData()
+        _authState.value = AuthState.LoggedOut
+    }
+
     private fun clearAuthData() {
         encryptedPrefs.edit()
             .remove("auth_token")
             .remove("token_expiry")
             .apply()
-    }
-
-    companion object {
-        private const val TOKEN_VALIDITY_DURATION = 7 * 24 * 60 * 60 * 1000L // 7 days in milliseconds
     }
 }
 
@@ -149,4 +171,5 @@ sealed class AuthState {
     object LoggedIn : AuthState()
     object LoggedOut : AuthState()
     object SessionExpired : AuthState()
+    data class Error(val message: String) : AuthState()
 }

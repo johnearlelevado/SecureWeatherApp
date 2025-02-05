@@ -24,3 +24,47 @@
 -keep class androidx.credentials.playservices.** {
   *;
 }
+
+# Keep Room entities
+-keep class com.example.secureweatherapp.data.local.** { *; }
+
+# Keep API models
+-keep class com.example.secureweatherapp.data.model.** { *; }
+
+# Keep security related classes
+-keepclassmembers class com.example.secureweatherapp.security.** { *; }
+
+# Keep Retrofit services
+-keep,allowobfuscation interface com.example.secureweatherapp.data.api.WeatherApi
+
+# AndroidX Security
+-keep class androidx.security.crypto.** { *; }
+
+# Biometric
+-keep class androidx.biometric.** { *; }
+
+# Encryption
+-keep class javax.crypto.** { *; }
+
+# Remove logging in release
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+}
+
+# Optimization
+-optimizationpasses 5
+-dontusemixedcaseclassnames
+-dontskipnonpubliclibraryclasses
+-dontpreverify
+-verbose
+
+# Remove kotlin metadata
+-keepattributes *Annotation*, Signature, Exception
+-keep class kotlin.** { *; }
+-keepclassmembers class kotlin.Metadata { *; }
+
+# Keep source file names for crash reporting
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile

@@ -17,6 +17,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.secureweatherapp.data.auth.AuthState
 import com.example.secureweatherapp.data.model.WeatherResponse
 import com.example.secureweatherapp.domain.util.Resource
+import com.example.secureweatherapp.ui.components.LogoutConfirmationDialog
 import com.example.secureweatherapp.ui.components.WeatherHistoryTab
 import com.example.secureweatherapp.ui.components.WeatherIcon
 import com.example.secureweatherapp.ui.util.Utils.formatTimeShort
@@ -32,6 +33,7 @@ fun HomeScreen(
     weatherViewModel: WeatherViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
+    var showLogoutDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val permissionsState = rememberMultiplePermissionsState(
         permissions = listOf(
@@ -63,16 +65,19 @@ fun HomeScreen(
         }
     }
 
+    if (showLogoutDialog) {
+        LogoutConfirmationDialog (
+            onConfirm = { authViewModel.logout() },
+            onDismiss = { showLogoutDialog = false }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Weather App") },
                 actions = {
-                    IconButton(
-                        onClick = {
-                            authViewModel.logout()
-                        }
-                    ) {
+                    IconButton(onClick = { showLogoutDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.ExitToApp,
                             contentDescription = "Logout"

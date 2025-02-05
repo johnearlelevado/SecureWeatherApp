@@ -16,7 +16,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        buildConfigField("String", "WEATHER_API_KEY", "\"YOUR_API_KEY_HERE\"")
+        buildConfigField("String", "WEATHER_API_KEY", "\"1ff3d24dc2bb546ce32f2e3b5dcf605d\"")
         buildConfigField("String", "WEATHER_BASE_URL", "\"https://api.openweathermap.org/data/2.5/\"")
 
         javaCompileOptions {
@@ -116,4 +116,12 @@ dependencies {
     // Add SLF4J implementation
     testImplementation("org.slf4j:slf4j-simple:1.7.32")
     implementation("io.coil-kt:coil-compose:2.4.0")
+
+    // Security
+    implementation ("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation ("androidx.biometric:biometric:1.2.0-alpha05")
+
+    // Encryption
+    implementation ("org.bouncycastle:bcprov-jdk15on:1.70")
+    implementation ("org.mindrot:jbcrypt:0.4")
 }

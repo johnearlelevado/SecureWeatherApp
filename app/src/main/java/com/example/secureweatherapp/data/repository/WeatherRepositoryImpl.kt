@@ -1,6 +1,7 @@
 package com.example.secureweatherapp.data.repository
 
 import android.util.Log
+import com.example.secureweatherapp.BuildConfig
 import com.example.secureweatherapp.data.api.WeatherApi
 import com.example.secureweatherapp.data.local.WeatherDao
 import com.example.secureweatherapp.data.local.WeatherEntity
@@ -24,7 +25,7 @@ class WeatherRepositoryImpl(
             val weather = api.getCurrentWeather(
                 lat = lat,
                 lon = lon,
-                apiKey = "1ff3d24dc2bb546ce32f2e3b5dcf605d"
+                apiKey = BuildConfig.WEATHER_API_KEY
             )
             emit(Resource.Success(weather))
 

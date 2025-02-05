@@ -1,0 +1,17 @@
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">api.openweathermap.org</domain>
+        <pin-set>
+            <!-- Primary certificate -->
+            <pin digest="SHA-256">CpmBztr3L/AZjANtR+K3vhridQoIsoyqTl5yU5zQQLQ=</pin>
+            <!-- Backup certificate -->
+            <pin digest="SHA-256">47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=</pin>
+            <expiration>2025-12-31</expiration>
+        </pin-set>
+    </domain-config>
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>
