@@ -6,40 +6,71 @@ import android.location.LocationManager
 import androidx.room.Room
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.example.secureweatherapp.auth.AuthManager
 import com.example.secureweatherapp.data.api.WeatherApi
+import com.example.secureweatherapp.data.local.UserDao
 import com.example.secureweatherapp.data.local.WeatherDao
 import com.example.secureweatherapp.data.local.WeatherDatabase
+import com.example.secureweatherapp.data.repository.AuthRepositoryImpl
 import com.example.secureweatherapp.data.repository.WeatherRepositoryImpl
+import com.example.secureweatherapp.domain.AuthRepository
 import com.example.secureweatherapp.domain.WeatherRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.components.ActivityRetainedComponent
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import okhttp3.CertificatePinner
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+    private const val BASE_URL = "api.openweathermap.org"
+
     @Provides
     @Singleton
-    fun provideWeatherApi(): WeatherApi {
+    fun provideCertificatePinner(): CertificatePinner {
+        return CertificatePinner.Builder()
+            .add(BASE_URL,
+                // Primary certificate
+                "sha256/CpmBztr3L/AZjANtR+K3vhridQoIsoyqTl5yU5zQQLQ=",
+                // Backup certificate
+                "sha256/47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=")
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(
+        certificatePinner: CertificatePinner
+    ): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
 
-        val client = OkHttpClient.Builder()
+        return OkHttpClient.Builder()
+            .certificatePinner(certificatePinner)
             .addInterceptor(loggingInterceptor)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
             .build()
+    }
 
+    @Provides
+    @Singleton
+    fun provideWeatherApi(okHttpClient: OkHttpClient): WeatherApi {
         return Retrofit.Builder()
-            .baseUrl("https://api.openweathermap.org/data/2.5/")
+            .baseUrl("https://$BASE_URL/data/2.5/")
             .addConverterFactory(GsonConverterFactory.create())
-            .client(client)
+            .client(okHttpClient)
             .build()
             .create(WeatherApi::class.java)
     }
@@ -53,12 +84,24 @@ object AppModule {
             context,
             WeatherDatabase::class.java,
             "weather_db"
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
     @Singleton
     fun provideWeatherDao(database: WeatherDatabase) = database.weatherDao
+
+    @Provides
+    @Singleton
+    fun provideUserDao(database: WeatherDatabase) = database.userDao
+
+    @Provides
+    @Singleton
+    fun provideAuthRepository(userDao: UserDao): AuthRepository {
+        return AuthRepositoryImpl(userDao)
+    }
 
     @Provides
     @Singleton
@@ -86,5 +129,13 @@ object AppModule {
     @Singleton
     fun provideLocationManager(@ApplicationContext context: Context): LocationManager {
         return context.getSystemService(LocationManager::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAuthManager(
+        encryptedPrefs: SharedPreferences
+    ): AuthManager {
+        return AuthManager(encryptedPrefs)
     }
 }

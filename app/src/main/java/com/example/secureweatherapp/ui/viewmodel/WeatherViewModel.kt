@@ -34,25 +34,22 @@ class WeatherViewModel @Inject constructor(
 
     init {
         Log.d(TAG, "ViewModel initialized")
-        if (checkLocationPermission()) {
-            Log.d(TAG, "Location permission already granted, fetching weather")
-            fetchWeather()
-        } else {
-            Log.d(TAG, "Location permission not granted yet")
+        // Initialize saved weather observation
+        viewModelScope.launch {
+            repository.getSavedWeather().collect {
+                _savedWeather.value = it
+            }
         }
     }
 
-    fun refreshWeather() {
-        Log.d(TAG, "refreshWeather called")
+    fun fetchWeather() {
+        Log.d(TAG, "fetchWeather called")
         if (!checkLocationPermission()) {
-            Log.e(TAG, "Location permission not granted during refresh")
+            Log.e(TAG, "Location permission not granted during fetch")
             _currentWeather.value = Resource.Error("Location permission required")
             return
         }
-        fetchWeather()
-    }
 
-    private fun fetchWeather() {
         viewModelScope.launch {
             try {
                 Log.d(TAG, "Attempting to fetch weather")
@@ -87,12 +84,6 @@ class WeatherViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "Error fetching weather", e)
                 _currentWeather.value = Resource.Error("Error fetching weather: ${e.message}")
-            }
-        }
-
-        viewModelScope.launch {
-            repository.getSavedWeather().collect {
-                _savedWeather.value = it
             }
         }
     }

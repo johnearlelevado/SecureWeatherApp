@@ -1,29 +1,16 @@
 package com.example.secureweatherapp.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.secureweatherapp.ui.viewmodel.AuthState
+import com.example.secureweatherapp.ui.viewmodel.AuthUiState
 import com.example.secureweatherapp.ui.viewmodel.AuthViewModel
 
 @Composable
@@ -32,14 +19,28 @@ fun LoginScreen(
     onNavigateToHome: () -> Unit,
     onNavigateToRegister: () -> Unit
 ) {
-    var email by remember { mutableStateOf("email@gmail.com") }
-    var password by remember { mutableStateOf("password") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
 
-    val uistate = viewModel.authState.collectAsState()
+    val context = LocalContext.current
+    val activity = context as ComponentActivity
 
-    LaunchedEffect(uistate.value) {
-        if (uistate.value is AuthState.Success) {
-            onNavigateToHome()
+    val authState by viewModel.authState.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState) {
+        when (uiState) {
+            is AuthUiState.Success -> onNavigateToHome()
+            is AuthUiState.Error -> {
+                showError = true
+                errorMessage = (uiState as AuthUiState.Error).message
+            }
+            else -> {
+                showError = false
+                errorMessage = ""
+            }
         }
     }
 
@@ -50,24 +51,67 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        OutlinedTextField (
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") }
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField (
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
-            visualTransformation = PasswordVisualTransformation()
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = {
-            viewModel.login(email, password)
-        }) {
-            Text("Login")
+        if (showError) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
         }
+
+        OutlinedTextField(
+            value = email,
+            onValueChange = {
+                email = it
+                showError = false
+            },
+            label = { Text("Email") },
+            isError = showError && email.isBlank(),
+            supportingText = {
+                if (showError && email.isBlank()) {
+                    Text("Email cannot be empty")
+                }
+            }
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = password,
+            onValueChange = {
+                password = it
+                showError = false
+            },
+            label = { Text("Password") },
+            visualTransformation = PasswordVisualTransformation(),
+            isError = showError && password.isBlank(),
+            supportingText = {
+                if (showError && password.isBlank()) {
+                    Text("Password cannot be empty")
+                }
+            }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+                if (email.isBlank() || password.isBlank()) {
+                    showError = true
+                    errorMessage = "Please fill in all fields"
+                } else {
+                    viewModel.login(activity, email, password)
+                }
+            },
+            enabled = uiState !is AuthUiState.Loading
+        ) {
+            if (uiState is AuthUiState.Loading) {
+                Text("Loading...")
+            } else {
+                Text("Login")
+            }
+        }
+
         TextButton(onClick = onNavigateToRegister) {
             Text("Don't have an account? Register")
         }
