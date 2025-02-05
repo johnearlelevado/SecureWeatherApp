@@ -1,6 +1,6 @@
-# Weather App
+# Secure Weather App
 
-A weather application built with Modern Android Development practices.
+A secure Android weather application built with modern Android development practices and strong security measures.
 
 ## Features
 
@@ -10,9 +10,6 @@ A weather application built with Modern Android Development practices.
 - Location-based weather updates
 - Encrypted data storage
 
-# Secure Weather App
-
-A secure Android weather application built with modern Android development practices and strong security measures.
 
 ## Tech Stack
 
