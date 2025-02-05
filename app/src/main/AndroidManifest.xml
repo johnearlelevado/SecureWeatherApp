@@ -15,7 +15,7 @@
         android:name="com.example.secureweatherapp.SecureWeatherApplication"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.SecureWeatherApp"
+        android:theme="@style/Theme.TestApplication"
         tools:targetApi="31">
         <activity
             android:name="com.example.secureweatherapp.ui.MainActivity"
