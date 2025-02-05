@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -10,22 +12,51 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.secureweatherapp"
-        minSdk = 24
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        minSdk = 21
+        targetSdk = 33
+    }
 
-        buildConfigField("String", "WEATHER_API_KEY", "\"your-api-key-here\"")
-        buildConfigField("String", "WEATHER_BASE_URL", "\"https://api.openweathermap.org/data/2.5/\"")
+    // Read local.properties file
+    val localProperties = Properties()
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localProperties.load(localPropertiesFile.inputStream())
+    }
 
-        javaCompileOptions {
-            annotationProcessorOptions {
-                arguments += mapOf(
-                    "room.schemaLocation" to "$projectDir/schemas",
-                    "room.incremental" to "true"
-                )
-            }
+    val debugApiKey = localProperties.getProperty("DEBUG_API_KEY")
+    val releaseApiKey = localProperties.getProperty("RELEASE_API_KEY")
+    val keystorePassword = localProperties.getProperty("KEYSTORE_PASSWORD")
+    val keyalias = localProperties.getProperty("KEY_ALIAS")
+    val keypassword = localProperties.getProperty("KEY_PASSWORD")
+
+
+    signingConfigs {
+        create("release") {
+            storeFile = file("release-keystore.jks")
+            storePassword = "$keystorePassword"
+            keyAlias = "$keyalias"
+            keyPassword = "$keypassword"
+        }
+    }
+
+    buildTypes {
+        debug {
+            versionNameSuffix = "-debug"
+            isDebuggable = true
+            isMinifyEnabled = false
+            isShrinkResources = false
+            buildConfigField("String", "API_URL", "\"https://api.openweathermap.org/data/2.5/\"")
+            buildConfigField("String", "API_KEY", "\"$debugApiKey\"")
+        }
+
+        release {
+            signingConfig = signingConfigs.getByName("release")
+            isDebuggable = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            buildConfigField("String", "API_URL", "\"https://api.openweathermap.org/data/2.5/\"")
+            buildConfigField("String", "API_KEY", "\"$releaseApiKey\"")
         }
     }
 

@@ -25,7 +25,7 @@ class WeatherRepositoryImpl(
             val weather = api.getCurrentWeather(
                 lat = lat,
                 lon = lon,
-                apiKey = BuildConfig.WEATHER_API_KEY
+                apiKey = BuildConfig.API_KEY
             )
             emit(Resource.Success(weather))
 
