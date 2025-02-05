@@ -21,9 +21,6 @@ class AuthViewModelTest {
     @MockK
     private lateinit var authManager: AuthManager
 
-    @MockK
-    private lateinit var activity: ComponentActivity
-
     private lateinit var viewModel: AuthViewModel
     private val authStateFlow = MutableStateFlow(AuthState.LoggedOut)
     private val testDispatcher = StandardTestDispatcher()
@@ -48,16 +45,16 @@ class AuthViewModelTest {
         val email = "test@example.com"
         val password = "password123"
         coEvery {
-            authManager.login(activity, email, password)
+            authManager.login(email, password)
         } returns Result.success(Unit)
 
         // When
-        viewModel.login(activity, email, password)
+        viewModel.login(email, password)
         testScheduler.advanceUntilIdle()
 
         // Then
         assertEquals(AuthUiState.Success, viewModel.uiState.value)
-        coVerify { authManager.login(activity, email, password) }
+        coVerify { authManager.login(email, password) }
     }
 
     @Test
@@ -67,11 +64,11 @@ class AuthViewModelTest {
         val password = "password123"
         val errorMessage = "Invalid credentials"
         coEvery {
-            authManager.login(activity, email, password)
+            authManager.login(email, password)
         } returns Result.failure(Exception(errorMessage))
 
         // When
-        viewModel.login(activity, email, password)
+        viewModel.login(email, password)
         testScheduler.advanceUntilIdle()
 
         // Then
@@ -85,16 +82,16 @@ class AuthViewModelTest {
         val email = "test@example.com"
         val password = "password123"
         coEvery {
-            authManager.register(activity, email, password)
+            authManager.register(email, password)
         } returns Result.success(Unit)
 
         // When
-        viewModel.register(activity, email, password)
+        viewModel.register(email, password)
         testScheduler.advanceUntilIdle()
 
         // Then
         assertEquals(AuthUiState.Success, viewModel.uiState.value)
-        coVerify { authManager.register(activity, email, password) }
+        coVerify { authManager.register(email, password) }
     }
 
     @Test
@@ -104,11 +101,11 @@ class AuthViewModelTest {
         val password = "password123"
         val errorMessage = "Email already exists"
         coEvery {
-            authManager.register(activity, email, password)
+            authManager.register(email, password)
         } returns Result.failure(Exception(errorMessage))
 
         // When
-        viewModel.register(activity, email, password)
+        viewModel.register(email, password)
         testScheduler.advanceUntilIdle()
 
         // Then

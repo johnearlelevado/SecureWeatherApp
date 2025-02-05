@@ -1,6 +1,8 @@
 package com.example.secureweatherapp.ui.screens
 
+import android.os.Build
 import androidx.activity.ComponentActivity
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,6 +15,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.secureweatherapp.ui.viewmodel.AuthUiState
 import com.example.secureweatherapp.ui.viewmodel.AuthViewModel
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun RegistrationScreen(
     viewModel: AuthViewModel = hiltViewModel(),
@@ -24,11 +27,6 @@ fun RegistrationScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
-
-    val context = LocalContext.current
-    val activity = context as ComponentActivity
-
-    val authState by viewModel.authState.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(uiState) {
@@ -136,7 +134,7 @@ fun RegistrationScreen(
                         errorMessage = "Please enter a valid email address"
                     }
                     else -> {
-                        viewModel.register(activity, email, password)
+                        viewModel.register(email, password)
                     }
                 }
             },

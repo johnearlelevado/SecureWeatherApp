@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import com.example.secureweatherapp.data.model.WeatherResponse
 import com.example.secureweatherapp.ui.util.Utils.formatTimeShort
 import com.example.secureweatherapp.ui.util.Utils.formatTimestamp
+import java.util.Locale
 
 @Composable
 fun WeatherHistoryTab(weatherList: List<WeatherResponse>) {
@@ -49,7 +50,7 @@ private fun HistoryCard(weather: WeatherResponse) {
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = weather.weather.firstOrNull()?.description?.capitalize() ?: "",
+                        text = weather.weather.firstOrNull()?.description?.capitalize(Locale.ROOT) ?: "",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

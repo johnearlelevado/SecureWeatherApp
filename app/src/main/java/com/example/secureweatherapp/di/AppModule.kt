@@ -3,6 +3,8 @@ package com.example.secureweatherapp.di
 import android.content.Context
 import android.content.SharedPreferences
 import android.location.LocationManager
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.room.Room
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -116,6 +118,7 @@ object AppModule {
         return WeatherRepositoryImpl(weatherApi, weatherDao)
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     @Provides
     @Singleton
     fun provideLocationManager(@ApplicationContext context: Context): LocationManager {
@@ -126,9 +129,8 @@ object AppModule {
     @Singleton
     fun provideAuthManager(
         encryptedPrefs: SharedPreferences,
-        userDao: UserDao,
-        @ApplicationContext context: Context
+        userDao: UserDao
     ): AuthManager {
-        return AuthManager(encryptedPrefs, userDao, context)
+        return AuthManager(encryptedPrefs, userDao)
     }
 }

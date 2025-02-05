@@ -5,15 +5,9 @@ import android.content.SharedPreferences
 import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresApi
-import androidx.credentials.CreatePasswordRequest
-import androidx.credentials.CredentialManager
-import androidx.credentials.GetCredentialRequest
-import androidx.credentials.GetPasswordOption
 import com.example.secureweatherapp.data.local.User
 import com.example.secureweatherapp.data.local.UserDao
-import com.example.secureweatherapp.security.DeviceSecurity
 import com.example.secureweatherapp.security.SecurityUtils
-import com.example.secureweatherapp.ui.util.DeviceUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ActivityRetainedScoped
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,8 +18,7 @@ import javax.inject.Inject
 @ActivityRetainedScoped
 class AuthManager @Inject constructor(
     private val encryptedPrefs: SharedPreferences,
-    private val userDao: UserDao,
-    @ApplicationContext private val context: Context
+    private val userDao: UserDao
 ) {
     companion object {
         private const val TOKEN_VALIDITY_DURATION = 2 * 60 * 60 * 1000L // 2 hours
@@ -35,7 +28,7 @@ class AuthManager @Inject constructor(
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     init {
-        if (SecurityUtils.isDeviceRooted()){ //|| DeviceSecurity.isDeveloperOptionsEnabled(context)) {
+        if (SecurityUtils.isDeviceRooted()) {
             _authState.value = AuthState.Error("Device security check failed")
         } else {
             checkAuthState()
@@ -57,31 +50,23 @@ class AuthManager @Inject constructor(
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    suspend fun register(activity: ComponentActivity, email: String, password: String): Result<Unit> {
+    suspend fun register(email: String, password: String): Result<Unit> {
         return try {
-            if (DeviceUtils.isEmulator()) {
-                if (userDao.isEmailTaken(email)) {
-                    return Result.failure(Exception("Email is already registered"))
-                }
-
-                val (hash, salt) = SecurityUtils.hashPassword(password)
-                val user = User(
-                    email = email,
-                    passwordHash = hash,
-                    passwordSalt = salt
-                )
-                userDao.insertUser(user)
-            } else {
-                val credentialManager = CredentialManager.create(activity)
-                val request = CreatePasswordRequest(
-                    id = email,
-                    password = password.toByteArray().toString()
-                )
-                credentialManager.createCredential(
-                    request = request,
-                    context = activity
-                )
+            if (userDao.isEmailTaken(email)) {
+                return Result.failure(Exception("Email is already registered"))
             }
+
+            if (!isPasswordStrong(password)) {
+                return Result.failure(Exception("Password must be at least 12 characters long and contain numbers, letters, and symbols"))
+            }
+
+            val (hash, salt) = SecurityUtils.hashPassword(password)
+            val user = User(
+                email = email,
+                passwordHash = hash,
+                passwordSalt = salt
+            )
+            userDao.insertUser(user)
 
             val token = generateSecureToken()
             saveAuthData(token)
@@ -93,23 +78,13 @@ class AuthManager @Inject constructor(
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    suspend fun login(activity: ComponentActivity, email: String, password: String): Result<Unit> {
+    suspend fun login(email: String, password: String): Result<Unit> {
         return try {
-            if (DeviceUtils.isEmulator()) {
-                val user = userDao.getUserByEmail(email) ?:
-                return Result.failure(Exception("Invalid credentials"))
+            val user = userDao.getUserByEmail(email)
+                ?: return Result.failure(Exception("Invalid credentials"))
 
-                if (!SecurityUtils.verifyPassword(password, user.passwordHash, user.passwordSalt)) {
-                    return Result.failure(Exception("Invalid credentials"))
-                }
-            } else {
-                val credentialManager = CredentialManager.create(activity)
-                val getPasswordOption = GetPasswordOption()
-                val request = GetCredentialRequest(listOf(getPasswordOption))
-                credentialManager.getCredential(
-                    request = request,
-                    context = activity
-                )
+            if (!SecurityUtils.verifyPassword(password, user.passwordHash, user.passwordSalt)) {
+                return Result.failure(Exception("Invalid credentials"))
             }
 
             val token = generateSecureToken()
@@ -119,6 +94,13 @@ class AuthManager @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    private fun isPasswordStrong(password: String): Boolean {
+        return password.length >= 12 &&
+                password.any { it.isDigit() } &&
+                password.any { it.isLetter() } &&
+                password.any { !it.isLetterOrDigit() }
     }
 
     private fun saveAuthData(token: String) {

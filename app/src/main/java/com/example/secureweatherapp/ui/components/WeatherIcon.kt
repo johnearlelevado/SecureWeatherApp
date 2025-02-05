@@ -23,7 +23,7 @@ fun WeatherIcon(
     // If it's 6 PM or later and the icon is for day time (ends with 'd'),
     // convert it to night version (ends with 'n')
     val finalIconCode = if (currentHour >= 18 && iconCode?.endsWith("d") == true) {
-        iconCode?.dropLast(1) + "n"
+        iconCode.dropLast(1) + "n"
     } else {
         iconCode
     }

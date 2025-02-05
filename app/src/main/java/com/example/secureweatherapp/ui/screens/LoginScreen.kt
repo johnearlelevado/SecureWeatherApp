@@ -1,6 +1,7 @@
 package com.example.secureweatherapp.ui.screens
 
-import androidx.activity.ComponentActivity
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,6 +14,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.secureweatherapp.ui.viewmodel.AuthUiState
 import com.example.secureweatherapp.ui.viewmodel.AuthViewModel
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun LoginScreen(
     viewModel: AuthViewModel = hiltViewModel(),
@@ -24,10 +26,6 @@ fun LoginScreen(
     var showError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
-    val context = LocalContext.current
-    val activity = context as ComponentActivity
-
-    val authState by viewModel.authState.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(uiState) {
@@ -100,7 +98,7 @@ fun LoginScreen(
                     showError = true
                     errorMessage = "Please fill in all fields"
                 } else {
-                    viewModel.login(activity, email, password)
+                    viewModel.login(email, password)
                 }
             },
             enabled = uiState !is AuthUiState.Loading

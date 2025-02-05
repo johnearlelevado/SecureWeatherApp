@@ -1,6 +1,8 @@
 package com.example.secureweatherapp.ui.viewmodel
 
+import android.os.Build
 import androidx.activity.ComponentActivity
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.secureweatherapp.data.auth.AuthManager
@@ -21,12 +23,13 @@ class AuthViewModel @Inject constructor(
     val uiState = _uiState.asStateFlow()
 
 
-    fun login(activity: ComponentActivity, email: String, password: String) {
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun login(email: String, password: String) {
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
 
             try {
-                authManager.login(activity, email, password).onSuccess {
+                authManager.login(email, password).onSuccess {
                     _uiState.value = AuthUiState.Success
                 }.onFailure { error ->
                     _uiState.value = AuthUiState.Error(error.message ?: "Authentication failed")
@@ -37,12 +40,13 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun register(activity: ComponentActivity, email: String, password: String) {
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun register(email: String, password: String) {
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
 
             try {
-                authManager.register(activity, email, password).onSuccess {
+                authManager.register(email, password).onSuccess {
                     _uiState.value = AuthUiState.Success
                 }.onFailure { error ->
                     _uiState.value = AuthUiState.Error(error.message ?: "Registration failed")
