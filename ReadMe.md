@@ -31,7 +31,6 @@ A secure Android weather application built with modern Android development pract
 
 ### Security
 - AndroidX Security Crypto
-- Android Credential Manager
 - Certificate Pinning
 - PBKDF2 Password Hashing
 
@@ -101,7 +100,6 @@ Certificate pins are configured in AppModule.kt:
 
 ### Authentication
 - Secure password storage using PBKDF2 with SHA256
-- Credential Manager integration for secure credential storage
 - Session management with token expiration
 - Device security checks (root detection, developer options (disabled for testing))
 
@@ -171,3 +169,6 @@ Certificate pins are configured in AppModule.kt:
 - Coroutines for async operations
 - Efficient data caching
 - Memory leak prevention
+
+### Experimental Security
+- Google Credential Manager (removed implementation because it's not testable on emulators due to no playstore services)
