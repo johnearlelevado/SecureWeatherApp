@@ -10,6 +10,10 @@ A secure Android weather application built with modern Android development pract
 - Location-based weather updates
 - Encrypted data storage
 
+<img src="https://github.com/user-attachments/assets/2161cf4d-f915-4716-92e3-2ad1ae9d3e9f" alt="Alt Text" style="width:20%; height:auto;">
+<img src="https://github.com/user-attachments/assets/1f8acb05-fe8f-459f-b2cd-fcc5cb1bfcea" alt="Alt Text" style="width:20%; height:auto;">
+<img src="https://github.com/user-attachments/assets/0b6daba5-cfdd-4428-b383-bc9528850f79" alt="Alt Text" style="width:20%; height:auto;">
+<img src="https://github.com/user-attachments/assets/1ed474f9-f454-4178-98a5-6dbc3cc3c5aa" alt="Alt Text" style="width:20%; height:auto;">
 
 ## Tech Stack
 
@@ -36,7 +40,7 @@ A secure Android weather application built with modern Android development pract
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/SecureWeatherApp.git
+git clone https://github.com/johnearlelevado/SecureWeatherApp.git
 ```
 
 2. Create/modify `local.properties` in project root:
@@ -169,6 +173,3 @@ Certificate pins are configured in AppModule.kt:
 - Coroutines for async operations
 - Efficient data caching
 - Memory leak prevention
-
-### Experimental Security
-- Google Credential Manager (removed implementation because it's not testable on emulators due to no playstore services)
