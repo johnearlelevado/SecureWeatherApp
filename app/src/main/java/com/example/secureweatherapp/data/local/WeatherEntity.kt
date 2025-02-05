@@ -14,7 +14,8 @@ data class WeatherEntity(
     val timestamp: Long,
     val description: String,
     val sunrise: Long,
-    val sunset: Long
+    val sunset: Long,
+    val icon: String  // Added icon field
 ) {
     fun toWeatherResponse(): WeatherResponse {
         return WeatherResponse(
@@ -32,13 +33,13 @@ data class WeatherEntity(
                     id = 0,
                     main = "",
                     description = description,
-                    icon = ""
+                    icon = icon  // Include icon in conversion
                 )
             ),
             dt = timestamp
         )
     }
-    
+
     companion object {
         fun fromWeatherResponse(weatherResponse: WeatherResponse): WeatherEntity {
             return WeatherEntity(
@@ -48,7 +49,8 @@ data class WeatherEntity(
                 timestamp = weatherResponse.dt,
                 description = weatherResponse.weather.firstOrNull()?.description ?: "",
                 sunrise = weatherResponse.sys.sunrise,
-                sunset = weatherResponse.sys.sunset
+                sunset = weatherResponse.sys.sunset,
+                icon = weatherResponse.weather.firstOrNull()?.icon ?: "01d"  // Default to clear sky day if no icon
             )
         }
     }

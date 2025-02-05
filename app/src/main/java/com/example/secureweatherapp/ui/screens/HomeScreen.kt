@@ -2,6 +2,7 @@ package com.example.secureweatherapp.ui.screens
 
 import android.Manifest
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
@@ -9,15 +10,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.secureweatherapp.auth.AuthState
+import com.example.secureweatherapp.data.auth.AuthState
 import com.example.secureweatherapp.data.model.WeatherResponse
 import com.example.secureweatherapp.domain.util.Resource
 import com.example.secureweatherapp.ui.components.WeatherHistoryTab
 import com.example.secureweatherapp.ui.components.WeatherIcon
-import com.example.secureweatherapp.ui.util.Utils
 import com.example.secureweatherapp.ui.util.Utils.formatTimeShort
 import com.example.secureweatherapp.ui.viewmodel.AuthViewModel
 import com.example.secureweatherapp.ui.viewmodel.WeatherViewModel
@@ -86,7 +87,8 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            TabRow(selectedTabIndex = selectedTabIndex) {
+            TabRow(selectedTabIndex = selectedTabIndex,
+                modifier = Modifier.background(Color(0xFFE3F2FD))) {
                 Tab(
                     selected = selectedTabIndex == 0,
                     onClick = { selectedTabIndex = 0 }
@@ -164,22 +166,26 @@ private fun CurrentWeatherTab(
                 Column(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = "${weather.name}, ${weather.sys.country}",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text(
-                            text = "${weather.main.temp}°C",
-                            style = MaterialTheme.typography.headlineLarge
+                        WeatherIcon(
+                            weather = weather,
+                            modifier = Modifier.size(106.dp) // Increased size
                         )
-                        WeatherIcon(weather = weather)
+
+                        Column {
+                            Text(
+                                text = "${weather.name}, ${weather.sys.country}",
+                                style = MaterialTheme.typography.headlineMedium
+                            )
+                            Text(
+                                text = "${weather.main.temp}°C",
+                                style = MaterialTheme.typography.headlineLarge
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))

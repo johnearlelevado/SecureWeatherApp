@@ -1,21 +1,25 @@
-package com.example.secureweatherapp.auth
+package com.example.secureweatherapp.data.auth
 
 import android.content.SharedPreferences
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.credentials.CreatePasswordRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetPasswordOption
+import com.example.secureweatherapp.data.local.User
+import com.example.secureweatherapp.data.local.UserDao
+import com.example.secureweatherapp.ui.util.DeviceUtils
 import dagger.hilt.android.scopes.ActivityRetainedScoped
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.security.MessageDigest
 import javax.inject.Inject
 
 @ActivityRetainedScoped
 class AuthManager @Inject constructor(
-    private val encryptedPrefs: SharedPreferences
+    private val encryptedPrefs: SharedPreferences,
+    private val userDao: UserDao
 ) {
     private val TAG = "AuthManager"
 
@@ -40,52 +44,78 @@ class AuthManager @Inject constructor(
         }
     }
 
+    private fun hashPassword(password: String): String {
+        val bytes = password.toByteArray()
+        val md = MessageDigest.getInstance("SHA-256")
+        val digest = md.digest(bytes)
+        return digest.fold("") { str, it -> str + "%02x".format(it) }
+    }
+
     suspend fun register(activity: ComponentActivity, email: String, password: String): Result<Unit> {
         return try {
-            val credentialManager = CredentialManager.create(activity)
+            if (DeviceUtils.isEmulator()) {
+                // Use Room database for emulator
+                if (userDao.isEmailTaken(email)) {
+                    return Result.failure(Exception("Email is already registered"))
+                }
 
-            val request = CreatePasswordRequest(
-                id = email,
-                password = password.toByteArray().toString()
-            )
+                val hashedPassword = hashPassword(password)
+                val user = User(
+                    email = email,
+                    passwordHash = hashedPassword
+                )
+                userDao.insertUser(user)
+            } else {
+                // Use Credential Manager for real devices
+                val credentialManager = CredentialManager.create(activity)
+                val request = CreatePasswordRequest(
+                    id = email,
+                    password = password.toByteArray().toString()
+                )
+                credentialManager.createCredential(
+                    request = request,
+                    context = activity
+                )
+            }
 
-            credentialManager.createCredential(
-                request = request,
-                context = activity
-            )
-
-            // For demo purposes, create a simple token
-            val token = "demo_token_${System.currentTimeMillis()}"
+            // For both cases, create a token and save auth data
+            val token = "token_${System.currentTimeMillis()}"
             saveAuthData(token)
-
             _authState.value = AuthState.LoggedIn
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "Error during registration", e)
             Result.failure(e)
         }
     }
 
-    suspend fun login(activity: ComponentActivity, email: String): Result<Unit> {
+    suspend fun login(activity: ComponentActivity, email: String, password: String): Result<Unit> {
         return try {
-            val credentialManager = CredentialManager.create(activity)
+            if (DeviceUtils.isEmulator()) {
+                // Use Room database for emulator
+                val user = userDao.getUserByEmail(email) ?:
+                return Result.failure(Exception("Invalid email or password"))
 
-            val getPasswordOption = GetPasswordOption()
-            val request = GetCredentialRequest(listOf(getPasswordOption))
+                val hashedPassword = hashPassword(password)
+                if (user.passwordHash != hashedPassword) {
+                    return Result.failure(Exception("Invalid email or password"))
+                }
+            } else {
+                // Use Credential Manager for real devices
+                val credentialManager = CredentialManager.create(activity)
+                val getPasswordOption = GetPasswordOption()
+                val request = GetCredentialRequest(listOf(getPasswordOption))
+                credentialManager.getCredential(
+                    request = request,
+                    context = activity
+                )
+            }
 
-            credentialManager.getCredential(
-                request = request,
-                context = activity
-            )
-
-            // For demo purposes, create a simple token
-            val token = "demo_token_${System.currentTimeMillis()}"
+            // For both cases, create a token and save auth data
+            val token = "token_${System.currentTimeMillis()}"
             saveAuthData(token)
-
             _authState.value = AuthState.LoggedIn
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "Error during login", e)
             Result.failure(e)
         }
     }
@@ -110,7 +140,7 @@ class AuthManager @Inject constructor(
     }
 
     companion object {
-        private const val TOKEN_VALIDITY_DURATION = 5000L //7 * 24 * 60 * 60 * 1000L // 7 days in milliseconds
+        private const val TOKEN_VALIDITY_DURATION = 7 * 24 * 60 * 60 * 1000L // 7 days in milliseconds
     }
 }
 

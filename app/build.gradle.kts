@@ -97,4 +97,23 @@ dependencies {
 
     implementation("androidx.credentials:credentials:1.2.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.2.0")
+
+    // Testing
+    testImplementation ("junit:junit:4.13.2")
+    testImplementation ("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.1")
+    testImplementation ("io.mockk:mockk:1.13.5")
+    testImplementation ("androidx.arch.core:core-testing:2.2.0")
+
+    // Android Testing
+    androidTestImplementation ("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation ("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation ("androidx.compose.ui:ui-test-junit4:1.5.4")
+    androidTestImplementation ("io.mockk:mockk-android:1.13.5")
+
+    // Debug Testing
+    debugImplementation ("androidx.compose.ui:ui-test-manifest:1.5.4")
+    debugImplementation ("androidx.compose.ui:ui-tooling:1.5.4")
+    // Add SLF4J implementation
+    testImplementation("org.slf4j:slf4j-simple:1.7.32")
+    implementation("io.coil-kt:coil-compose:2.4.0")
 }

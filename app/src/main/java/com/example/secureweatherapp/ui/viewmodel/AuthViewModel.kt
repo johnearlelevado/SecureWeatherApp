@@ -3,7 +3,7 @@ package com.example.secureweatherapp.ui.viewmodel
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.secureweatherapp.auth.AuthManager
+import com.example.secureweatherapp.data.auth.AuthManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,12 +20,13 @@ class AuthViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState = _uiState.asStateFlow()
 
+
     fun login(activity: ComponentActivity, email: String, password: String) {
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
 
             try {
-                authManager.login(activity, email).onSuccess {
+                authManager.login(activity, email, password).onSuccess {
                     _uiState.value = AuthUiState.Success
                 }.onFailure { error ->
                     _uiState.value = AuthUiState.Error(error.message ?: "Authentication failed")

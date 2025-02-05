@@ -10,7 +10,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.secureweatherapp.auth.AuthState
 import com.example.secureweatherapp.ui.viewmodel.AuthUiState
 import com.example.secureweatherapp.ui.viewmodel.AuthViewModel
 

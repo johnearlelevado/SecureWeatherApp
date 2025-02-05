@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.example.secureweatherapp.ui.themes.WeatherAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import com.example.secureweatherapp.ui.navigation.WeatherAppNavigation
@@ -19,7 +20,7 @@ class MainActivity : ComponentActivity() {
             WeatherAppTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = Color(0xFFE3F2FD)
                 ) {
                     WeatherAppNavigation()
                 }

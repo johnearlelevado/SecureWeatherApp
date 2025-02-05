@@ -6,19 +6,16 @@ import android.location.LocationManager
 import androidx.room.Room
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import com.example.secureweatherapp.auth.AuthManager
+import com.example.secureweatherapp.data.auth.AuthManager
 import com.example.secureweatherapp.data.api.WeatherApi
 import com.example.secureweatherapp.data.local.UserDao
 import com.example.secureweatherapp.data.local.WeatherDao
 import com.example.secureweatherapp.data.local.WeatherDatabase
-import com.example.secureweatherapp.data.repository.AuthRepositoryImpl
 import com.example.secureweatherapp.data.repository.WeatherRepositoryImpl
-import com.example.secureweatherapp.domain.AuthRepository
 import com.example.secureweatherapp.domain.WeatherRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.components.ActivityRetainedComponent
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.CertificatePinner
@@ -99,12 +96,6 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideAuthRepository(userDao: UserDao): AuthRepository {
-        return AuthRepositoryImpl(userDao)
-    }
-
-    @Provides
-    @Singleton
     fun provideEncryptedSharedPreferences(@ApplicationContext context: Context): SharedPreferences {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -134,8 +125,9 @@ object AppModule {
     @Provides
     @Singleton
     fun provideAuthManager(
-        encryptedPrefs: SharedPreferences
+        encryptedPrefs: SharedPreferences,
+        userDao: UserDao
     ): AuthManager {
-        return AuthManager(encryptedPrefs)
+        return AuthManager(encryptedPrefs, userDao)
     }
 }

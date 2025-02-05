@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.LocationManager
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.secureweatherapp.data.model.WeatherResponse
@@ -33,7 +32,6 @@ class WeatherViewModel @Inject constructor(
     val savedWeather = _savedWeather.asStateFlow()
 
     init {
-        Log.d(TAG, "ViewModel initialized")
         // Initialize saved weather observation
         viewModelScope.launch {
             repository.getSavedWeather().collect {
@@ -43,46 +41,37 @@ class WeatherViewModel @Inject constructor(
     }
 
     fun fetchWeather() {
-        Log.d(TAG, "fetchWeather called")
         if (!checkLocationPermission()) {
-            Log.e(TAG, "Location permission not granted during fetch")
             _currentWeather.value = Resource.Error("Location permission required")
             return
         }
 
         viewModelScope.launch {
             try {
-                Log.d(TAG, "Attempting to fetch weather")
                 _currentWeather.value = Resource.Loading()
 
                 // Try GPS provider first
                 var location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
 
                 if (location == null) {
-                    Log.d(TAG, "GPS location null, trying network provider")
                     // Try network provider as fallback
                     location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
                 }
 
                 if (location == null) {
-                    Log.e(TAG, "Both GPS and Network location are null")
                     _currentWeather.value = Resource.Error("Unable to get location. Please make sure location services are enabled.")
                     return@launch
                 }
 
-                Log.d(TAG, "Location obtained: ${location.latitude}, ${location.longitude}")
 
                 repository.getCurrentWeather(location.latitude, location.longitude)
                     .collect { resource ->
-                        Log.d(TAG, "Weather resource received: $resource")
                         _currentWeather.value = resource
                     }
 
             } catch (e: SecurityException) {
-                Log.e(TAG, "Security Exception during fetch", e)
                 _currentWeather.value = Resource.Error("Location permission required")
             } catch (e: Exception) {
-                Log.e(TAG, "Error fetching weather", e)
                 _currentWeather.value = Resource.Error("Error fetching weather: ${e.message}")
             }
         }
@@ -91,7 +80,6 @@ class WeatherViewModel @Inject constructor(
     private fun checkLocationPermission(): Boolean {
         val hasPermission = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED
-        Log.d(TAG, "Location permission check result: $hasPermission")
         return hasPermission
     }
 }

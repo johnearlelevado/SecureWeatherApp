@@ -12,7 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.secureweatherapp.auth.AuthState
+import com.example.secureweatherapp.data.auth.AuthState
 
 @Composable
 fun SplashScreen(
