@@ -1,52 +1,52 @@
 package com.example.secureweatherapp.data.repository
 
-import android.content.SharedPreferences
+import android.util.Log
 import com.example.secureweatherapp.data.api.WeatherApi
+import com.example.secureweatherapp.data.local.WeatherDao
+import com.example.secureweatherapp.data.local.WeatherEntity
 import com.example.secureweatherapp.data.model.WeatherResponse
 import com.example.secureweatherapp.domain.WeatherRepository
 import com.example.secureweatherapp.domain.util.Resource
-import com.example.weatherapp.BuildConfig
-import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import javax.inject.Inject
+import kotlinx.coroutines.flow.map
+import retrofit2.HttpException
+import java.io.IOException
 
-class WeatherRepositoryImpl @Inject constructor(
+class WeatherRepositoryImpl(
     private val api: WeatherApi,
-    private val encryptedPrefs: SharedPreferences
+    private val dao: WeatherDao
 ) : WeatherRepository {
+
     override suspend fun getCurrentWeather(lat: Double, lon: Double): Flow<Resource<WeatherResponse>> = flow {
         try {
             emit(Resource.Loading())
-            val response = api.getCurrentWeather(
+            val weather = api.getCurrentWeather(
                 lat = lat,
                 lon = lon,
-                apiKey = BuildConfig.WEATHER_API_KEY
+                apiKey = "1ff3d24dc2bb546ce32f2e3b5dcf605d"
             )
-            emit(Resource.Success(response))
-            saveWeather(response)
-        } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "An error occurred"))
+            emit(Resource.Success(weather))
+
+            // Save to Room database
+            try {
+                dao.insertWeather(WeatherEntity.fromWeatherResponse(weather))
+                val deletedRows = dao.deleteOldEntries()
+                Log.d("WeatherRepository", "Deleted $deletedRows old entries")
+            } catch (e: Exception) {
+                Log.e("WeatherRepository", "Error saving to database", e)
+            }
+
+        } catch (e: HttpException) {
+            emit(Resource.Error("An error occurred: ${e.localizedMessage}"))
+        } catch (e: IOException) {
+            emit(Resource.Error("Couldn't reach server. Check your internet connection."))
         }
     }
 
-    private fun saveWeather(weather: WeatherResponse) {
-        encryptedPrefs.edit().putString(
-            "weather_${System.currentTimeMillis()}",
-            Gson().toJson(weather)
-        ).apply()
-    }
-
-    override fun getSavedWeather(): Flow<List<WeatherResponse>> = flow {
-        val weatherList = encryptedPrefs.all.values
-            .mapNotNull { it as? String }
-            .mapNotNull { 
-                try {
-                    Gson().fromJson(it, WeatherResponse::class.java)
-                } catch (e: Exception) {
-                    null
-                }
-            }
-        emit(weatherList)
+    override fun getSavedWeather(): Flow<List<WeatherResponse>> {
+        return dao.getRecentWeather().map { entities ->
+            entities.map { it.toWeatherResponse() }
+        }
     }
 }

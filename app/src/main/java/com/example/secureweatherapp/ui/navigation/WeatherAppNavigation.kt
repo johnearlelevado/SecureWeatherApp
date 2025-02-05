@@ -59,7 +59,7 @@ public fun WeatherAppNavigation() {
                     popUpTo("login") { inclusive = true }
                 }
             }
-            else -> {} // Handle other states if needed
+            else -> {}
         }
     }
 }

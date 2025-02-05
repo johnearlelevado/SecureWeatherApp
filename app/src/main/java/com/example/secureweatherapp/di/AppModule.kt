@@ -3,12 +3,14 @@ package com.example.secureweatherapp.di
 import android.content.Context
 import android.content.SharedPreferences
 import android.location.LocationManager
+import androidx.room.Room
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.example.secureweatherapp.data.api.WeatherApi
+import com.example.secureweatherapp.data.local.WeatherDao
+import com.example.secureweatherapp.data.local.WeatherDatabase
 import com.example.secureweatherapp.data.repository.WeatherRepositoryImpl
 import com.example.secureweatherapp.domain.WeatherRepository
-import com.example.weatherapp.BuildConfig
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -26,19 +28,37 @@ object AppModule {
     @Provides
     @Singleton
     fun provideWeatherApi(): WeatherApi {
+        val loggingInterceptor = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+
+        val client = OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor)
+            .build()
+
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.WEATHER_BASE_URL)
+            .baseUrl("https://api.openweathermap.org/data/2.5/")
             .addConverterFactory(GsonConverterFactory.create())
-            .client(
-                OkHttpClient.Builder()
-                .addInterceptor(HttpLoggingInterceptor().apply {
-                    level = HttpLoggingInterceptor.Level.BODY
-                })
-                .build()
-            )
+            .client(client)
             .build()
             .create(WeatherApi::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideWeatherDatabase(
+        @ApplicationContext context: Context
+    ): WeatherDatabase {
+        return Room.databaseBuilder(
+            context,
+            WeatherDatabase::class.java,
+            "weather_db"
+        ).build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideWeatherDao(database: WeatherDatabase) = database.weatherDao
 
     @Provides
     @Singleton
@@ -58,8 +78,8 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideWeatherRepository(weatherApi: WeatherApi,encryptedSharedPreferences: SharedPreferences): WeatherRepository {
-        return WeatherRepositoryImpl(weatherApi,encryptedSharedPreferences)
+    fun provideWeatherRepository(weatherApi: WeatherApi, weatherDao: WeatherDao): WeatherRepository {
+        return WeatherRepositoryImpl(weatherApi, weatherDao)
     }
 
     @Provides
