@@ -22,12 +22,6 @@ data class User(
     @ColumnInfo(name = "password_salt")
     val passwordSalt: String,
 
-    @ColumnInfo(name = "failed_attempts")
-    val failedAttempts: Int = 0,
-
-    @ColumnInfo(name = "last_attempt")
-    val lastAttempt: Long = 0,
-
     @ColumnInfo(name = "created_at")
     val createdAt: Long = System.currentTimeMillis(),
 
