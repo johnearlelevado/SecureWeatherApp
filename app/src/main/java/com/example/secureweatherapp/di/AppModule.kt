@@ -129,8 +129,9 @@ object AppModule {
     @Singleton
     fun provideAuthManager(
         encryptedPrefs: SharedPreferences,
-        userDao: UserDao
+        userDao: UserDao,
+        @ApplicationContext context: Context
     ): AuthManager {
-        return AuthManager(encryptedPrefs, userDao)
+        return AuthManager(encryptedPrefs, userDao, context)
     }
 }

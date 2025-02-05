@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresApi
 import com.example.secureweatherapp.data.local.User
 import com.example.secureweatherapp.data.local.UserDao
+import com.example.secureweatherapp.security.DeviceSecurity
 import com.example.secureweatherapp.security.SecurityUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ActivityRetainedScoped
@@ -18,7 +19,8 @@ import javax.inject.Inject
 @ActivityRetainedScoped
 class AuthManager @Inject constructor(
     private val encryptedPrefs: SharedPreferences,
-    private val userDao: UserDao
+    private val userDao: UserDao,
+    @ApplicationContext private val context: Context
 ) {
     companion object {
         private const val TOKEN_VALIDITY_DURATION = 2 * 60 * 60 * 1000L // 2 hours
@@ -29,7 +31,9 @@ class AuthManager @Inject constructor(
 
     init {
         if (SecurityUtils.isDeviceRooted()) {
-            _authState.value = AuthState.Error("Device security check failed")
+            _authState.value = AuthState.SecurityError("Device security check failed. The app cannot run on rooted devices.")
+        } else if (DeviceSecurity.isDeveloperOptionsEnabled(context)) {
+            _authState.value = AuthState.SecurityError("Device security check failed. The app cannot run when developer options is enabled.")
         } else {
             checkAuthState()
         }
@@ -133,4 +137,5 @@ sealed class AuthState {
     object LoggedOut : AuthState()
     object SessionExpired : AuthState()
     data class Error(val message: String) : AuthState()
+    data class SecurityError(val message: String) : AuthState()
 }
