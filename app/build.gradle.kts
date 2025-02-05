@@ -16,7 +16,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        buildConfigField("String", "WEATHER_API_KEY", "\"1ff3d24dc2bb546ce32f2e3b5dcf605d\"")
+        buildConfigField("String", "WEATHER_API_KEY", "\"your-api-key-here\"")
         buildConfigField("String", "WEATHER_BASE_URL", "\"https://api.openweathermap.org/data/2.5/\"")
 
         javaCompileOptions {
