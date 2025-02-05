@@ -29,15 +29,13 @@ class AuthManager @Inject constructor(
 ) {
     companion object {
         private const val TOKEN_VALIDITY_DURATION = 2 * 60 * 60 * 1000L // 2 hours
-        private const val MAX_LOGIN_ATTEMPTS = 5
-        private const val LOCKOUT_DURATION = 15 * 60 * 1000L // 15 minutes
     }
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     init {
-        if (SecurityUtils.isDeviceRooted()) { //|| DeviceSecurity.isDeveloperOptionsEnabled(context)
+        if (SecurityUtils.isDeviceRooted()){ //|| DeviceSecurity.isDeveloperOptionsEnabled(context)) {
             _authState.value = AuthState.Error("Device security check failed")
         } else {
             checkAuthState()
@@ -101,16 +99,9 @@ class AuthManager @Inject constructor(
                 val user = userDao.getUserByEmail(email) ?:
                 return Result.failure(Exception("Invalid credentials"))
 
-                if (isUserLockedOut(user.lastAttempt, user.failedAttempts)) {
-                    return Result.failure(Exception("Account is temporarily locked"))
-                }
-
                 if (!SecurityUtils.verifyPassword(password, user.passwordHash, user.passwordSalt)) {
-                    handleFailedLogin(email)
                     return Result.failure(Exception("Invalid credentials"))
                 }
-
-                userDao.resetFailedAttempts(email)
             } else {
                 val credentialManager = CredentialManager.create(activity)
                 val getPasswordOption = GetPasswordOption()
@@ -128,18 +119,6 @@ class AuthManager @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
-    }
-
-    private fun isUserLockedOut(lastAttempt: Long, failedAttempts: Int): Boolean {
-        if (failedAttempts >= MAX_LOGIN_ATTEMPTS) {
-            val timeSinceLastAttempt = System.currentTimeMillis() - lastAttempt
-            return timeSinceLastAttempt < LOCKOUT_DURATION
-        }
-        return false
-    }
-
-    private suspend fun handleFailedLogin(email: String) {
-        userDao.incrementFailedAttempts(email)
     }
 
     private fun saveAuthData(token: String) {
