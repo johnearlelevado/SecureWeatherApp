@@ -104,15 +104,10 @@ Certificate pins are configured in AppModule.kt:
 - Credential Manager integration for secure credential storage
 - Session management with token expiration
 - Device security checks (root detection, developer options (disabled for testing))
-- API keys are not committed to version control
-- Release signing configuration is secured via uncommitted local.properties
-- Different API keys for debug/release builds
 
 ### Data Protection
 - Encrypted SharedPreferences for sensitive data
 - Room database security
-- Certificate pinning for API communication
-- HTTPS enforcement
 
 ### Device Security
 - Root detection
@@ -122,7 +117,12 @@ Certificate pins are configured in AppModule.kt:
 - Certificate pinning
 - HTTPS-only communication
 - API key protection
-- Request/Response encryption 
+- Request/Response encryption
+
+### Build Security
+- API keys are not committed to version control
+- Release signing configuration is secured via uncommitted local.properties
+- Different API keys for debug/release builds
 
 ## Architecture
 
